@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Diamond Dispatch — a clean, fast home for everything baseball: standings, legends, and the rhythm of the game." />
+  <title>Diamond Dispatch ⚾ | Everything Baseball</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚾</text></svg>" />
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="#top">
+        <span class="brand-ball">⚾</span>
+        <span class="brand-name">Diamond Dispatch</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#standings">Standings</a></li>
+        <li><a href="#legends">Legends</a></li>
+        <li><a href="#rules">Know the Game</a></li>
+        <li><a href="#dugout">Dugout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-inner">
+        <p class="kicker">Bottom of the ninth, two outs</p>
+        <h1 class="hero-title">The game slows down<br />so you can see it.</h1>
+        <p class="hero-sub">
+          Standings, legends, and the quiet math of a 162-game season —
+          all in one clean dugout view.
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#standings">See the standings</a>
+          <button class="btn btn-ghost" id="factBtn">Hit me a fun fact</button>
+        </div>
+        <p class="hero-fact" id="factOut" aria-live="polite"></p>
+      </div>
+      <div class="hero-scoreboard" aria-hidden="true">
+        <div class="scoreboard">
+          <div class="sb-row sb-head"><span>INN</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span class="sb-rhe">R</span></div>
+          <div class="sb-row"><span class="sb-team">AWAY</span><span>0</span><span>1</span><span>0</span><span>0</span><span>2</span><span>0</span><span>0</span><span>0</span><span>1</span><span class="sb-rhe">4</span></div>
+          <div class="sb-row"><span class="sb-team">HOME</span><span>0</span><span>0</span><span>0</span><span>3</span><span>0</span><span>0</span><span>1</span><span>0</span><span class="sb-walk">x</span><span class="sb-rhe">4</span></div>
+        </div>
+        <p class="sb-caption">Tie game. Free baseball coming up.</p>
+      </div>
+    </section>
+
+    <section id="standings" class="section">
+      <div class="section-head">
+        <h2>Sample Standings</h2>
+        <p>A snapshot of a pennant race. Click a column header to sort.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="standings" id="standingsTable">
+          <thead>
+            <tr>
+              <th data-key="team" data-type="text">Team</th>
+              <th data-key="w" data-type="num">W</th>
+              <th data-key="l" data-type="num">L</th>
+              <th data-key="pct" data-type="num">PCT</th>
+              <th data-key="gb" data-type="num">GB</th>
+              <th data-key="streak" data-type="text">Streak</th>
+            </tr>
+          </thead>
+          <tbody><!-- filled by script.js --></tbody>
+        </table>
+      </div>
+      <p class="disclaimer">Illustrative data for a demo site — not live scores.</p>
+    </section>
+
+    <section id="legends" class="section section-alt">
+      <div class="section-head">
+        <h2>Legends of the Diamond</h2>
+        <p>A few names every fan should know.</p>
+      </div>
+      <div class="cards" id="legendCards"><!-- filled by script.js --></div>
+    </section>
+
+    <section id="rules" class="section">
+      <div class="section-head">
+        <h2>Know the Game</h2>
+        <p>The whole sport, in five plain-English ideas.</p>
+      </div>
+      <ol class="rules">
+        <li><strong>Three outs</strong> end a half-inning. Nine innings make a game — unless it's tied, then you play on.</li>
+        <li><strong>Four balls</strong> is a walk; <strong>three strikes</strong> is an out. The count rules every at-bat.</li>
+        <li><strong>Cross all four bases</strong> in order and you score a run. Touch them out of order and you don't.</li>
+        <li><strong>A fielder's choice</strong>, a sacrifice, a stolen base — small decisions decide close games.</li>
+        <li><strong>162 games</strong> in a regular season. Baseball rewards the patient over the streaky.</li>
+      </ol>
+    </section>
+
+    <section id="dugout" class="section section-alt">
+      <div class="section-head">
+        <h2>From the Dugout</h2>
+        <p>Why we built this.</p>
+      </div>
+      <div class="dugout">
+        <p>
+          Diamond Dispatch is a small, fast, open project — a clean front porch for
+          the slowest, smartest game there is. No autoplay video, no popups, just the
+          parts of baseball worth lingering on.
+        </p>
+        <p class="dugout-sign">— Built with a little help, deployed on Vercel.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>⚾ Diamond Dispatch · <span id="year"></span> · A demo baseball site</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
