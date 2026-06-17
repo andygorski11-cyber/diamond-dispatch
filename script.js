@@ -2,97 +2,151 @@
 const $ = (sel) => document.querySelector(sel);
 const pad = (n) => String(n).padStart(2, "0");
 
-function ymd(d) {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-function parseYmd(s) {
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
+function ymd(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+function parseYmd(s) { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); }
 function prettyDate(s) {
-  const d = parseYmd(s);
-  return d.toLocaleDateString(undefined, {
+  return parseYmd(s).toLocaleDateString(undefined, {
     weekday: "long", month: "long", day: "numeric", year: "numeric",
   });
 }
 function localTime(iso) {
   if (!iso) return "TBD";
-  try {
-    return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-  } catch { return "TBD"; }
+  try { return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }); }
+  catch { return "TBD"; }
 }
-function logoUrl(id) {
-  return id ? `https://www.mlbstatic.com/team-logos/${id}.svg` : "";
-}
+function mlbLogo(id) { return id ? `https://www.mlbstatic.com/team-logos/${id}.svg` : ""; }
 const BALL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E";
 
+// ---------- normalization (MLB + College -> one shape) ----------
+function finalBadge(inning) {
+  if (inning && inning !== "9th") return `Final/${inning.replace(/\D/g, "")}`;
+  return "Final";
+}
+function mlbTeam(t, opp, state) {
+  const final = state === "Final";
+  return {
+    logo: mlbLogo(t.id), abbr: t.abbr || t.name, name: t.name,
+    record: t.wins != null ? `${t.wins}-${t.losses}` : "",
+    score: t.score, rank: null, won: final && t.isWinner,
+    lost: final && t.score != null && opp.score != null && t.score < opp.score,
+  };
+}
+function normMlb(g) {
+  return {
+    state: g.state, isCWS: false, note: "", venue: g.venue,
+    away: mlbTeam(g.away, g.home, g.state),
+    home: mlbTeam(g.home, g.away, g.state),
+    live: {
+      label: `${g.inningState || ""} ${g.inning || ""}`.trim(),
+      count: g.balls != null && g.strikes != null ? `${g.balls}-${g.strikes}` : "",
+      outs: g.outs, bases: g.bases,
+    },
+    badge: g.state === "Final" ? finalBadge(g.inning) : g.startTimeTBD ? "TBD" : localTime(g.startTime),
+  };
+}
+function collTeam(t, opp, state) {
+  const final = state === "Final";
+  return {
+    logo: t.logo, abbr: t.abbr || t.name, name: t.name, record: t.record || "",
+    score: t.score, rank: t.rank, won: final && t.winner,
+    lost: final && t.score != null && opp.score != null && t.score < opp.score,
+  };
+}
+function normColl(g) {
+  const s = g.situation;
+  return {
+    state: g.state, isCWS: g.isCWS, note: g.note,
+    venue: g.city ? `${g.venue} · ${g.city}` : g.venue,
+    away: collTeam(g.away, g.home, g.state),
+    home: collTeam(g.home, g.away, g.state),
+    live: {
+      label: g.detail,
+      count: s && s.balls != null && s.strikes != null ? `${s.balls}-${s.strikes}` : "",
+      outs: s ? s.outs : null, bases: s ? s.bases : null,
+    },
+    badge: g.state === "Final" ? "Final" : localTime(g.startTime),
+  };
+}
+
+const LEAGUES = {
+  mlb:     { url: (d) => (d ? `/api/scores?date=${d}` : `/api/scores`),  norm: normMlb },
+  college: { url: (d) => (d ? `/api/college?date=${d}` : `/api/college`), norm: normColl },
+};
+
 // ---------- state ----------
-let currentDate = null;     // "YYYY-MM-DD" currently displayed
+let currentLeague = "mlb";
+let currentDate = null;
 let refreshTimer = null;
 
 // ---------- scores ----------
 async function loadScores(date) {
   const grid = $("#gamesGrid");
-  const url = date ? `/api/scores?date=${date}` : "/api/scores";
+  const lg = LEAGUES[currentLeague];
   try {
-    const res = await fetch(url);
+    const res = await fetch(lg.url(date));
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     currentDate = data.date;
     $("#dateText").textContent = prettyDate(data.date);
     $("#todayBtn").hidden = false;
-    renderGames(data.games);
-    scheduleRefresh(data.games);
+    updateCws(data.games);
+    renderGames(data.games.map(lg.norm));
+    scheduleRefresh(data.games.map(lg.norm));
   } catch (err) {
     grid.innerHTML = `<div class="state-msg error">Couldn't load scores (${err.message}). <button class="linkbtn" id="retry">Retry</button></div>`;
-    const r = $("#retry");
-    if (r) r.onclick = () => loadScores(currentDate);
+    const r = $("#retry"); if (r) r.onclick = () => loadScores(currentDate);
   }
 }
 
-function teamRow(t, opp, state) {
-  const decided = state === "Final";
-  const lost = decided && opp.score != null && t.score != null && t.score < opp.score;
-  const won = decided && t.isWinner;
-  const rec = t.wins != null ? `<span class="rec">${t.wins}-${t.losses}</span>` : "";
-  const score = t.score != null ? t.score : "";
+function updateCws(rawGames) {
+  const banner = $("#cwsBanner");
+  const cws = currentLeague === "college" && rawGames.some((g) => g.isCWS);
+  banner.hidden = !cws;
+  if (cws) {
+    const live = rawGames.filter((g) => g.isCWS && g.state === "Live").length;
+    $("#cwsText").textContent = live
+      ? `${live} game${live > 1 ? "s" : ""} live now from Charles Schwab Field, Omaha`
+      : "Live & recent games from Charles Schwab Field, Omaha";
+  }
+}
+
+function teamRow(t) {
+  const rec = t.record ? `<span class="rec">${t.record}</span>` : "";
+  const rank = t.rank ? `<span class="rank">#${t.rank}</span>` : "";
   return `
-    <div class="team ${lost ? "team-lost" : ""} ${won ? "team-won" : ""}">
-      <img class="team-logo" src="${logoUrl(t.id)}" alt="" loading="lazy"
+    <div class="team ${t.lost ? "team-lost" : ""} ${t.won ? "team-won" : ""}">
+      <img class="team-logo" src="${t.logo}" alt="" loading="lazy"
            onerror="this.onerror=null;this.src='${BALL}'" />
-      <span class="team-name"><span class="abbr">${t.abbr || t.name}</span> ${rec}</span>
-      <span class="team-score">${score}</span>
+      <span class="team-name">${rank}<span class="abbr">${t.abbr}</span> ${rec}</span>
+      <span class="team-score">${t.score != null ? t.score : ""}</span>
     </div>`;
+}
+
+function basesSvg(b = {}) {
+  const on = (k) => (b && b[k] ? "on" : "");
+  return `<svg viewBox="0 0 34 24" width="34" height="24" aria-hidden="true">
+    <rect class="base ${on("second")}" x="13" y="2" width="8" height="8" transform="rotate(45 17 6)"/>
+    <rect class="base ${on("third")}" x="3" y="12" width="8" height="8" transform="rotate(45 7 16)"/>
+    <rect class="base ${on("first")}" x="23" y="12" width="8" height="8" transform="rotate(45 27 16)"/>
+  </svg>`;
 }
 
 function statusBlock(g) {
   if (g.state === "Live") {
-    const half = g.inningState ? `${g.inningState} ${g.inning || ""}`.trim() : (g.inning || "Live");
-    const count = g.balls != null && g.strikes != null ? `${g.balls}-${g.strikes}` : "";
-    const outs = g.outs != null ? `${g.outs} out${g.outs === 1 ? "" : "s"}` : "";
+    const outs = g.live.outs != null ? `${g.live.outs} out${g.live.outs === 1 ? "" : "s"}` : "";
+    const extra = [g.live.count, outs].filter(Boolean).join(" · ");
     return `
       <div class="status status-live">
         <span class="badge badge-live">● LIVE</span>
-        <span class="inning">${half}</span>
-        <div class="bases">${basesSvg(g.bases)}</div>
-        <span class="count">${[count, outs].filter(Boolean).join(" · ")}</span>
+        <span class="inning">${g.live.label || ""}</span>
+        <div class="bases">${basesSvg(g.live.bases)}</div>
+        <span class="count">${extra}</span>
       </div>`;
   }
   if (g.state === "Final") {
-    const extra = g.inning && g.inning !== "9th" ? `/${g.inning.replace(/\D/g, "")}` : "";
-    return `<div class="status"><span class="badge badge-final">Final${extra}</span></div>`;
+    return `<div class="status"><span class="badge badge-final">${g.badge}</span></div>`;
   }
-  const time = g.startTimeTBD ? "TBD" : localTime(g.startTime);
-  return `<div class="status"><span class="badge badge-prev">${time}</span><span class="sched">Scheduled</span></div>`;
-}
-
-function basesSvg(b = {}) {
-  const f = b.first ? "on" : "", s = b.second ? "on" : "", t = b.third ? "on" : "";
-  return `<svg viewBox="0 0 34 24" width="34" height="24" aria-hidden="true">
-    <rect class="base ${s}" x="13" y="2" width="8" height="8" transform="rotate(45 17 6)"/>
-    <rect class="base ${t}" x="3" y="12" width="8" height="8" transform="rotate(45 7 16)"/>
-    <rect class="base ${f}" x="23" y="12" width="8" height="8" transform="rotate(45 27 16)"/>
-  </svg>`;
+  return `<div class="status"><span class="badge badge-prev">${g.badge}</span><span class="sched">Scheduled</span></div>`;
 }
 
 function renderGames(games) {
@@ -102,27 +156,19 @@ function renderGames(games) {
     return;
   }
   grid.innerHTML = games.map((g) => `
-    <article class="game ${g.state === "Live" ? "game-live" : ""}">
-      <div class="teams">
-        ${teamRow(g.away, g.home, g.state)}
-        ${teamRow(g.home, g.away, g.state)}
-      </div>
+    <article class="game ${g.state === "Live" ? "game-live" : ""} ${g.isCWS ? "game-cws" : ""}">
+      ${g.isCWS ? `<div class="cws-chip">🏆 ${g.note || "College World Series"}</div>` : ""}
+      <div class="teams">${teamRow(g.away)}${teamRow(g.home)}</div>
       ${statusBlock(g)}
       ${g.venue ? `<div class="venue">${g.venue}</div>` : ""}
     </article>`).join("");
 }
 
-// auto-refresh every 30s when any game is live
 function scheduleRefresh(games) {
   if (refreshTimer) clearTimeout(refreshTimer);
   const anyLive = games.some((g) => g.state === "Live");
-  const info = $("#refreshInfo");
-  if (anyLive) {
-    info.textContent = "Auto-refreshing live games…";
-    refreshTimer = setTimeout(() => loadScores(currentDate), 30000);
-  } else {
-    info.textContent = "";
-  }
+  $("#refreshInfo").textContent = anyLive ? "Auto-refreshing live games…" : "";
+  if (anyLive) refreshTimer = setTimeout(() => loadScores(currentDate), 30000);
 }
 
 function shiftDay(delta) {
@@ -136,7 +182,17 @@ $("#prevDay").onclick = () => shiftDay(-1);
 $("#nextDay").onclick = () => shiftDay(1);
 $("#todayBtn").onclick = () => loadScores(null);
 
-// ---------- standings ----------
+document.querySelectorAll(".lg-btn").forEach((btn) => {
+  btn.onclick = () => {
+    if (btn.dataset.league === currentLeague) return;
+    currentLeague = btn.dataset.league;
+    document.querySelectorAll(".lg-btn").forEach((b) => b.classList.toggle("active", b === btn));
+    $("#gamesGrid").innerHTML = `<div class="state-msg">Loading scores…</div>`;
+    loadScores(null);
+  };
+});
+
+// ---------- MLB standings ----------
 async function loadStandings() {
   const wrap = $("#divisions");
   try {
@@ -149,19 +205,14 @@ async function loadStandings() {
     wrap.innerHTML = `<div class="state-msg error">Couldn't load standings (${err.message}).</div>`;
   }
 }
-
 function divisionCard(div) {
   const rows = div.teams.map((t, i) => `
     <tr class="${i === 0 ? "leader" : ""}">
       <td class="t-team">
-        <img class="mini-logo" src="${logoUrl(t.id)}" alt="" loading="lazy"
-             onerror="this.onerror=null;this.src='${BALL}'" />
-        ${t.abbr || t.name}
+        <img class="mini-logo" src="${mlbLogo(t.id)}" alt="" loading="lazy"
+             onerror="this.onerror=null;this.src='${BALL}'" />${t.abbr || t.name}
       </td>
-      <td>${t.wins}</td>
-      <td>${t.losses}</td>
-      <td>${t.pct}</td>
-      <td>${t.gb}</td>
+      <td>${t.wins}</td><td>${t.losses}</td><td>${t.pct}</td><td>${t.gb}</td>
       <td class="${t.streak.startsWith("W") ? "streak-w" : "streak-l"}">${t.streak}</td>
     </tr>`).join("");
   return `
@@ -174,9 +225,36 @@ function divisionCard(div) {
     </div>`;
 }
 
+// ---------- College Top 25 ----------
+async function loadRankings() {
+  const wrap = $("#rankings");
+  try {
+    const res = await fetch("/api/college-rankings");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    $("#rankSub").textContent = `${data.poll} · NCAA Division I baseball`;
+    wrap.innerHTML = data.teams.map((t) => {
+      const trend = t.trend
+        ? `<span class="trend ${t.trend.startsWith("-") ? "down" : "up"}">${t.trend.startsWith("-") ? "▼" : "▲"}${t.trend.replace(/\D/g, "")}</span>`
+        : "";
+      return `
+        <div class="rank-row">
+          <span class="rk">${t.rank}</span>
+          <img class="mini-logo" src="${t.logo}" alt="" loading="lazy"
+               onerror="this.onerror=null;this.src='${BALL}'" />
+          <span class="rk-name">${t.name}</span>
+          <span class="rk-rec">${t.record}</span>
+          ${trend}
+        </div>`;
+    }).join("");
+  } catch (err) {
+    wrap.innerHTML = `<div class="state-msg error">Couldn't load rankings (${err.message}).</div>`;
+  }
+}
+
 // ---------- boot ----------
 $("#year").textContent = new Date().getFullYear();
 loadScores(null);
 loadStandings();
-// refresh standings every 10 min
+loadRankings();
 setInterval(loadStandings, 600000);

@@ -71,6 +71,39 @@ a { color: inherit; }
 .section-head h2 { font-size: clamp(1.7rem, 4vw, 2.6rem); margin: 0 0 0.3rem; color: var(--navy); }
 .section-head p { margin: 0; color: var(--muted); font-size: 1.05rem; }
 
+/* ---------- league toggle ---------- */
+.league-toggle {
+  display: inline-flex; gap: 0.25rem; padding: 0.3rem;
+  background: #eef1f6; border-radius: 999px; margin-bottom: 1.25rem;
+}
+.lg-btn {
+  border: 0; cursor: pointer; font: inherit; font-weight: 700; font-size: 0.95rem;
+  padding: 0.5rem 1.2rem; border-radius: 999px; color: var(--muted);
+  background: transparent; transition: background 0.15s, color 0.15s;
+}
+.lg-btn:hover { color: var(--navy); }
+.lg-btn.active { background: var(--navy); color: var(--cream); box-shadow: var(--shadow); }
+
+/* ---------- CWS spotlight ---------- */
+.cws-banner {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.9rem;
+  background: linear-gradient(100deg, #7a1f0e, var(--clay));
+  color: #fff; border-radius: 12px; padding: 0.7rem 1.1rem; margin-bottom: 1.25rem;
+  box-shadow: var(--shadow); font-weight: 600;
+}
+.cws-tag { font-family: "Anton", sans-serif; letter-spacing: 1px; font-size: 1.05rem; }
+.cws-banner span:last-child { font-weight: 500; opacity: 0.95; }
+.game-cws { border-color: rgba(193, 68, 14, 0.55); }
+.cws-chip {
+  font-size: 0.7rem; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase;
+  color: var(--clay); background: rgba(193, 68, 14, 0.1);
+  padding: 0.25rem 0.5rem; border-radius: 6px; align-self: flex-start;
+}
+.rank {
+  font-size: 0.72rem; font-weight: 800; color: #fff; background: var(--grass);
+  padding: 0.05rem 0.35rem; border-radius: 5px; margin-right: 0.35rem; vertical-align: middle;
+}
+
 /* ---------- scores bar ---------- */
 .scores-bar {
   display: flex; flex-wrap: wrap; gap: 1rem 1.5rem;
@@ -145,6 +178,26 @@ a { color: inherit; }
 .mini-logo { width: 1.25rem; height: 1.25rem; object-fit: contain; }
 .streak-w { color: var(--grass); font-weight: 700; }
 .streak-l { color: var(--clay); font-weight: 700; }
+
+/* ---------- college Top 25 ---------- */
+.rankings {
+  display: grid; gap: 0.4rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+.rank-row {
+  display: flex; align-items: center; gap: 0.6rem;
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  padding: 0.5rem 0.75rem; box-shadow: var(--shadow);
+}
+.rank-row .rk {
+  font-family: "Anton", sans-serif; font-size: 1.05rem; color: var(--navy);
+  min-width: 1.6rem; text-align: center;
+}
+.rank-row .rk-name { font-weight: 700; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-row .rk-rec { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.trend { font-size: 0.75rem; font-weight: 800; }
+.trend.up { color: var(--grass); }
+.trend.down { color: var(--clay); }
 
 /* ---------- states ---------- */
 .state-msg { grid-column: 1 / -1; padding: 2.5rem 1rem; text-align: center; color: var(--muted); font-size: 1.05rem; }

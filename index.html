@@ -21,6 +21,7 @@
       <ul class="nav-links">
         <li><a href="#scores" class="active">Scores</a></li>
         <li><a href="#standings">Standings</a></li>
+        <li><a href="#top25">Top 25</a></li>
         <li><a href="#about">About</a></li>
       </ul>
     </nav>
@@ -30,12 +31,22 @@
     <section class="hero hero-compact">
       <div class="hero-inner">
         <p class="kicker">Live from the ballpark</p>
-        <h1 class="hero-title">MLB scores,<br />clean and current.</h1>
-        <p class="hero-sub">Live games, final results, and what's on deck — refreshed automatically. Plus the division races as they stand today.</p>
+        <h1 class="hero-title">Baseball scores,<br />clean and current.</h1>
+        <p class="hero-sub">Live and recent games from <strong>MLB</strong> and <strong>NCAA college baseball</strong> — including the College World Series — refreshed automatically. Plus standings and the Top 25.</p>
       </div>
     </section>
 
     <section id="scores" class="section">
+      <div class="league-toggle" role="tablist" aria-label="Choose league">
+        <button class="lg-btn active" data-league="mlb" role="tab">⚾ MLB</button>
+        <button class="lg-btn" data-league="college" role="tab">🎓 College</button>
+      </div>
+
+      <div class="cws-banner" id="cwsBanner" hidden>
+        <span class="cws-tag">🏆 College World Series</span>
+        <span id="cwsText">Live from Charles Schwab Field, Omaha</span>
+      </div>
+
       <div class="scores-bar">
         <div class="datenav">
           <button class="navbtn" id="prevDay" aria-label="Previous day">◀</button>
@@ -67,15 +78,26 @@
       </div>
     </section>
 
-    <section id="about" class="section">
+    <section id="top25" class="section">
+      <div class="section-head">
+        <h2>College Top 25</h2>
+        <p id="rankSub">NCAA Division I baseball poll, from the live feed.</p>
+      </div>
+      <div class="rankings" id="rankings">
+        <div class="state-msg">Loading rankings…</div>
+      </div>
+    </section>
+
+    <section id="about" class="section section-alt">
       <div class="section-head"><h2>About</h2></div>
       <div class="dugout">
         <p>
           Diamond Dispatch pulls live and recent game data straight from the public
-          <strong>MLB Stats API</strong> through a small serverless proxy — no autoplay video,
-          no popups, just the scoreboard. Scores refresh on their own while games are in progress.
+          <strong>MLB Stats API</strong> and <strong>ESPN's college baseball feed</strong> through
+          small serverless proxies — no autoplay video, no popups, just the scoreboard. Scores
+          refresh on their own while games are in progress.
         </p>
-        <p class="dugout-sign">Data: MLB Stats API · Deployed on Vercel · Not affiliated with MLB.</p>
+        <p class="dugout-sign">Data: MLB Stats API &amp; ESPN · Deployed on Vercel · Not affiliated with MLB or the NCAA.</p>
       </div>
     </section>
   </main>
