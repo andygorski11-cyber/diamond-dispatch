@@ -4,6 +4,9 @@ A clean, fast, single-page baseball site — sample standings (sortable), legend
 game, a "know the rules" primer, and a random fun-fact generator. Pure HTML/CSS/JS, no
 build step, deployed on [Vercel](https://vercel.com).
 
+**🔗 Live:** https://diamond-dispatch-beige.vercel.app
+**📦 Source:** https://github.com/andygorski11-cyber/diamond-dispatch
+
 ## Run locally
 
 It's a static site — just open `index.html`, or serve it:
