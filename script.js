@@ -1,114 +1,182 @@
-// ---------- Fun facts ----------
-const FACTS = [
-  "A regulation baseball has exactly 108 double stitches.",
-  "The longest pro game lasted 33 innings — Pawtucket vs. Rochester, 1981.",
-  "Nolan Ryan threw seven no-hitters, more than anyone in history.",
-  "The 'can of corn' is an easy fly ball — slang from old grocers catching cans.",
-  "A perfect game (27 up, 27 down) has happened only 24 times in MLB history.",
-  "Cy Young won 511 games — a record likely never to be broken.",
-  "The seventh-inning stretch tradition dates back well over a century.",
-  "The fastest recorded pitch is 105.8 mph, by Aroldis Chapman in 2010.",
-  "A 'golden sombrero' is striking out four times in one game.",
-  "Home plate is a 17-inch-wide pentagon — the only non-rectangular base.",
-];
+// ---------- helpers ----------
+const $ = (sel) => document.querySelector(sel);
+const pad = (n) => String(n).padStart(2, "0");
 
-const factBtn = document.getElementById("factBtn");
-const factOut = document.getElementById("factOut");
-let lastFact = -1;
-if (factBtn) {
-  factBtn.addEventListener("click", () => {
-    let i;
-    do { i = Math.floor(Math.random() * FACTS.length); } while (i === lastFact);
-    lastFact = i;
-    factOut.textContent = "⚾ " + FACTS[i];
+function ymd(d) {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+function parseYmd(s) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function prettyDate(s) {
+  const d = parseYmd(s);
+  return d.toLocaleDateString(undefined, {
+    weekday: "long", month: "long", day: "numeric", year: "numeric",
   });
 }
+function localTime(iso) {
+  if (!iso) return "TBD";
+  try {
+    return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  } catch { return "TBD"; }
+}
+function logoUrl(id) {
+  return id ? `https://www.mlbstatic.com/team-logos/${id}.svg` : "";
+}
+const BALL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E";
 
-// ---------- Standings data ----------
-const TEAMS = [
-  { team: "River City Rockets", w: 94, l: 68, streak: "W4" },
-  { team: "Harbor Hounds", w: 91, l: 71, streak: "W2" },
-  { team: "Summit Stags", w: 88, l: 74, streak: "L1" },
-  { team: "Delta Dynamos", w: 84, l: 78, streak: "W1" },
-  { team: "Coastal Captains", w: 79, l: 83, streak: "L3" },
-  { team: "Granite Grizzlies", w: 76, l: 86, streak: "W1" },
-  { team: "Prairie Pioneers", w: 70, l: 92, streak: "L5" },
-  { team: "Iron Works", w: 67, l: 95, streak: "L2" },
-];
+// ---------- state ----------
+let currentDate = null;     // "YYYY-MM-DD" currently displayed
+let refreshTimer = null;
 
-function withDerived(rows) {
-  const maxW = Math.max(...rows.map((r) => r.w));
-  const leader = rows.find((r) => r.w === maxW);
-  return rows.map((r) => ({
-    ...r,
-    pct: r.w / (r.w + r.l),
-    gb: ((leader.w - r.w) + (r.l - leader.l)) / 2,
-  }));
+// ---------- scores ----------
+async function loadScores(date) {
+  const grid = $("#gamesGrid");
+  const url = date ? `/api/scores?date=${date}` : "/api/scores";
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    currentDate = data.date;
+    $("#dateText").textContent = prettyDate(data.date);
+    $("#todayBtn").hidden = false;
+    renderGames(data.games);
+    scheduleRefresh(data.games);
+  } catch (err) {
+    grid.innerHTML = `<div class="state-msg error">Couldn't load scores (${err.message}). <button class="linkbtn" id="retry">Retry</button></div>`;
+    const r = $("#retry");
+    if (r) r.onclick = () => loadScores(currentDate);
+  }
 }
 
-let data = withDerived(TEAMS);
-let sortKey = "w";
-let sortDir = -1; // -1 desc, 1 asc
-
-function fmtPct(p) { return p.toFixed(3).replace(/^0/, ""); }
-function fmtGb(g) { return g === 0 ? "—" : g.toFixed(1); }
-
-function renderTable() {
-  const tbody = document.querySelector("#standingsTable tbody");
-  const sorted = [...data].sort((a, b) => {
-    const av = a[sortKey], bv = b[sortKey];
-    if (typeof av === "string") return av.localeCompare(bv) * sortDir;
-    return (av - bv) * sortDir;
-  });
-  tbody.innerHTML = sorted.map((r) => {
-    const sc = r.streak.startsWith("W") ? "streak-w" : "streak-l";
-    return `<tr>
-      <td>${r.team}</td>
-      <td>${r.w}</td>
-      <td>${r.l}</td>
-      <td>${fmtPct(r.pct)}</td>
-      <td>${fmtGb(r.gb)}</td>
-      <td class="${sc}">${r.streak}</td>
-    </tr>`;
-  }).join("");
-
-  document.querySelectorAll("#standingsTable thead th").forEach((th) => {
-    th.classList.remove("sorted-asc", "sorted-desc");
-    if (th.dataset.key === sortKey) {
-      th.classList.add(sortDir === 1 ? "sorted-asc" : "sorted-desc");
-    }
-  });
+function teamRow(t, opp, state) {
+  const decided = state === "Final";
+  const lost = decided && opp.score != null && t.score != null && t.score < opp.score;
+  const won = decided && t.isWinner;
+  const rec = t.wins != null ? `<span class="rec">${t.wins}-${t.losses}</span>` : "";
+  const score = t.score != null ? t.score : "";
+  return `
+    <div class="team ${lost ? "team-lost" : ""} ${won ? "team-won" : ""}">
+      <img class="team-logo" src="${logoUrl(t.id)}" alt="" loading="lazy"
+           onerror="this.onerror=null;this.src='${BALL}'" />
+      <span class="team-name"><span class="abbr">${t.abbr || t.name}</span> ${rec}</span>
+      <span class="team-score">${score}</span>
+    </div>`;
 }
 
-document.querySelectorAll("#standingsTable thead th").forEach((th) => {
-  th.addEventListener("click", () => {
-    const key = th.dataset.key;
-    if (key === sortKey) { sortDir *= -1; }
-    else { sortKey = key; sortDir = th.dataset.type === "text" ? 1 : -1; }
-    renderTable();
-  });
-});
+function statusBlock(g) {
+  if (g.state === "Live") {
+    const half = g.inningState ? `${g.inningState} ${g.inning || ""}`.trim() : (g.inning || "Live");
+    const count = g.balls != null && g.strikes != null ? `${g.balls}-${g.strikes}` : "";
+    const outs = g.outs != null ? `${g.outs} out${g.outs === 1 ? "" : "s"}` : "";
+    return `
+      <div class="status status-live">
+        <span class="badge badge-live">● LIVE</span>
+        <span class="inning">${half}</span>
+        <div class="bases">${basesSvg(g.bases)}</div>
+        <span class="count">${[count, outs].filter(Boolean).join(" · ")}</span>
+      </div>`;
+  }
+  if (g.state === "Final") {
+    const extra = g.inning && g.inning !== "9th" ? `/${g.inning.replace(/\D/g, "")}` : "";
+    return `<div class="status"><span class="badge badge-final">Final${extra}</span></div>`;
+  }
+  const time = g.startTimeTBD ? "TBD" : localTime(g.startTime);
+  return `<div class="status"><span class="badge badge-prev">${time}</span><span class="sched">Scheduled</span></div>`;
+}
 
-renderTable();
+function basesSvg(b = {}) {
+  const f = b.first ? "on" : "", s = b.second ? "on" : "", t = b.third ? "on" : "";
+  return `<svg viewBox="0 0 34 24" width="34" height="24" aria-hidden="true">
+    <rect class="base ${s}" x="13" y="2" width="8" height="8" transform="rotate(45 17 6)"/>
+    <rect class="base ${t}" x="3" y="12" width="8" height="8" transform="rotate(45 7 16)"/>
+    <rect class="base ${f}" x="23" y="12" width="8" height="8" transform="rotate(45 27 16)"/>
+  </svg>`;
+}
 
-// ---------- Legends ----------
-const LEGENDS = [
-  { emoji: "🦇", name: "Hank Aaron", pos: "Right Field", note: "755 career home runs and a model of quiet excellence over 23 seasons." },
-  { emoji: "⚡", name: "Jackie Robinson", pos: "Second Base", note: "Broke baseball's color barrier in 1947 and changed the sport forever." },
-  { emoji: "🔥", name: "Nolan Ryan", pos: "Pitcher", note: "Seven no-hitters and 5,714 strikeouts — both all-time records." },
-  { emoji: "🧤", name: "Willie Mays", pos: "Center Field", note: "'The Catch' and a five-tool game that defined the position." },
-];
-
-const cards = document.getElementById("legendCards");
-if (cards) {
-  cards.innerHTML = LEGENDS.map((l) => `
-    <article class="card">
-      <div class="card-emoji">${l.emoji}</div>
-      <span class="pos">${l.pos}</span>
-      <h3>${l.name}</h3>
-      <p>${l.note}</p>
+function renderGames(games) {
+  const grid = $("#gamesGrid");
+  if (!games || !games.length) {
+    grid.innerHTML = `<div class="state-msg">No games scheduled for this date.</div>`;
+    return;
+  }
+  grid.innerHTML = games.map((g) => `
+    <article class="game ${g.state === "Live" ? "game-live" : ""}">
+      <div class="teams">
+        ${teamRow(g.away, g.home, g.state)}
+        ${teamRow(g.home, g.away, g.state)}
+      </div>
+      ${statusBlock(g)}
+      ${g.venue ? `<div class="venue">${g.venue}</div>` : ""}
     </article>`).join("");
 }
 
-// ---------- Footer year ----------
-document.getElementById("year").textContent = new Date().getFullYear();
+// auto-refresh every 30s when any game is live
+function scheduleRefresh(games) {
+  if (refreshTimer) clearTimeout(refreshTimer);
+  const anyLive = games.some((g) => g.state === "Live");
+  const info = $("#refreshInfo");
+  if (anyLive) {
+    info.textContent = "Auto-refreshing live games…";
+    refreshTimer = setTimeout(() => loadScores(currentDate), 30000);
+  } else {
+    info.textContent = "";
+  }
+}
+
+function shiftDay(delta) {
+  if (!currentDate) return;
+  const d = parseYmd(currentDate);
+  d.setDate(d.getDate() + delta);
+  loadScores(ymd(d));
+}
+
+$("#prevDay").onclick = () => shiftDay(-1);
+$("#nextDay").onclick = () => shiftDay(1);
+$("#todayBtn").onclick = () => loadScores(null);
+
+// ---------- standings ----------
+async function loadStandings() {
+  const wrap = $("#divisions");
+  try {
+    const res = await fetch("/api/standings");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    $("#standingsSub").textContent = `${data.season} season · updated from the live MLB feed.`;
+    wrap.innerHTML = data.divisions.map(divisionCard).join("");
+  } catch (err) {
+    wrap.innerHTML = `<div class="state-msg error">Couldn't load standings (${err.message}).</div>`;
+  }
+}
+
+function divisionCard(div) {
+  const rows = div.teams.map((t, i) => `
+    <tr class="${i === 0 ? "leader" : ""}">
+      <td class="t-team">
+        <img class="mini-logo" src="${logoUrl(t.id)}" alt="" loading="lazy"
+             onerror="this.onerror=null;this.src='${BALL}'" />
+        ${t.abbr || t.name}
+      </td>
+      <td>${t.wins}</td>
+      <td>${t.losses}</td>
+      <td>${t.pct}</td>
+      <td>${t.gb}</td>
+      <td class="${t.streak.startsWith("W") ? "streak-w" : "streak-l"}">${t.streak}</td>
+    </tr>`).join("");
+  return `
+    <div class="division">
+      <h3>${div.name}</h3>
+      <table class="stand-table">
+        <thead><tr><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th><th>STRK</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+// ---------- boot ----------
+$("#year").textContent = new Date().getFullYear();
+loadScores(null);
+loadStandings();
+// refresh standings every 10 min
+setInterval(loadStandings, 600000);
