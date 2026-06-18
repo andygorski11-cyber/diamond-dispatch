@@ -53,7 +53,7 @@
 
   function favPayload(r) {
     return r.type === "player"
-      ? { lg: "mlb", ty: "player", id: r.name, nm: r.name, ab: r.ab || "", lo: r.logo, tid: String(r.tid) }
+      ? { lg: "mlb", ty: "player", id: r.name, nm: r.name, ab: r.ab || "", lo: r.logo, tid: String(r.tid), pid: r.id != null ? String(r.id) : "" }
       : { lg: r.lg, ty: "team", id: String(r.id), nm: r.name, ab: r.ab || "", lo: r.logo };
   }
 

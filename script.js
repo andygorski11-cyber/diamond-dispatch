@@ -453,7 +453,7 @@ function leaderCard(block) {
            onerror="this.onerror=null;this.src='${BALL}'" />
       <span class="lr-name">${l.name}</span>
       <span class="lr-val">${l.value}</span>
-      ${window.Favorites ? window.Favorites.star({ lg: "mlb", ty: "player", id: l.name, nm: l.name, ab: "", lo: mlbLogo(l.teamId), tid: String(l.teamId) }) : ""}
+      ${window.Favorites ? window.Favorites.star({ lg: "mlb", ty: "player", id: l.name, nm: l.name, ab: "", lo: mlbLogo(l.teamId), tid: String(l.teamId), pid: l.personId != null ? String(l.personId) : "" }) : ""}
     </li>`).join("");
   return `
     <div class="leader-card">

@@ -9,7 +9,8 @@ functions. Vanilla HTML/CSS/JS frontend, deployed on [Vercel](https://vercel.com
 - **Login / sign-up gate** — email+password (saved on-device, hashed), Google sign-in, or guest mode;
   the session persists so you stay signed in across visits (Google Client ID set in `auth-config.js`)
 - **Search** — look up any MLB player or any MLB/college team and favorite them straight from the results
-- **Favorites & alerts** — signed-in users can ★ any team or player; a background watcher raises in-app
+- **Favorites & alerts** — signed-in users can ★ any team or player; each favorite expands to a panel with
+  season stats, the next game, and whether the player is starting; a background watcher raises in-app
   notifications (bell feed) and optional browser alerts when a favorite goes live, scores, or finishes
 - **Live scores** for MLB and college with inning, count, outs, and base runners — auto-refreshing every 30s
 - **Gamecast** — expand any live or finished game for the current at-bat (batter/pitcher),
@@ -30,6 +31,7 @@ functions. Vanilla HTML/CSS/JS frontend, deployed on [Vercel](https://vercel.com
 | `/api/leaders?league=mlb` | Top hitters (AVG/OPS/SLG) and teams by win% |
 | `/api/college-rankings` | NCAA D1 Top 25 poll |
 | `/api/search-index` | Player/team index for the search bar |
+| `/api/detail?type=player\|team&id=…` | Season stats, next game, and starting status for a favorite |
 | `/api/gamecast?league=mlb&id={gamePk}` | Per-game line score, at-bat, and play-by-play (MLB) |
 | `/api/gamecast?league=college&id={eventId}` | Per-game line score, at-bat, and play-by-play (college) |
 

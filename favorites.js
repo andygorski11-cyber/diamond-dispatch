@@ -66,13 +66,88 @@
   function chip(p) {
     const enc = encodeURIComponent(JSON.stringify(p));
     const sub = p.ty === "player" ? "Player" : "Team";
-    return `<div class="fav-chip">
-      <img class="mini-logo" src="${p.lo || ""}" alt="" loading="lazy"
-           onerror="this.style.visibility='hidden'" />
-      <span class="fav-chip-name">${p.nm}</span>
-      <span class="fav-chip-tag">${p.lg.toUpperCase()} · ${sub}</span>
-      <button class="fav-remove" data-fav="${enc}" aria-label="Remove ${p.nm}">✕</button>
+    return `<div class="fav-item">
+      <div class="fav-row">
+        <button class="fav-chip" data-detail="${enc}" aria-expanded="false">
+          <img class="mini-logo" src="${p.lo || ""}" alt="" loading="lazy"
+               onerror="this.style.visibility='hidden'" />
+          <span class="fav-chip-name">${p.nm}</span>
+          <span class="fav-chip-tag">${p.lg.toUpperCase()} · ${sub}</span>
+          <span class="fav-caret">▾</span>
+        </button>
+        <button class="fav-remove" data-fav="${enc}" aria-label="Remove ${p.nm}">✕</button>
+      </div>
+      <div class="fav-detail" hidden></div>
     </div>`;
+  }
+
+  // ---------- detail dropdown (stats + next game + starting) ----------
+  const detailCache = new Map();
+  function detailUrl(p) {
+    if (p.ty === "player") {
+      return p.pid ? `/api/detail?type=player&id=${encodeURIComponent(p.pid)}`
+                   : `/api/detail?type=player&name=${encodeURIComponent(p.nm)}`;
+    }
+    return `/api/detail?type=team&league=${p.lg}&id=${encodeURIComponent(p.id)}`;
+  }
+  function fmtWhen(iso) {
+    if (!iso) return "TBD";
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    } catch { return "TBD"; }
+  }
+  function startBadge(s) {
+    if (!s) return "";
+    const cls = { yes: "ok", no: "no", pending: "wait", unknown: "wait" }[s.state] || "wait";
+    const dot = { yes: "🟢", no: "⚪", pending: "🟡", unknown: "⚪" }[s.state] || "⚪";
+    return `<div class="d-start ${cls}">${dot} ${s.text}</div>`;
+  }
+  function detailHtml(d) {
+    if (d.error) return `<div class="gc-msg error">Couldn't load details.</div>`;
+    const stats = (d.statline || []).length
+      ? `<div class="d-stats">${d.statline.map((s) => `<div class="d-stat"><span class="d-val">${s.value}</span><span class="d-lbl">${s.label}</span></div>`).join("")}</div>`
+      : `<div class="gc-msg">No season stats available.</div>`;
+    const g = d.nextGame;
+    let next;
+    if (g) {
+      const vs = `${g.home ? "vs" : "@"} ${g.opponent}`;
+      const probs = [];
+      if (g.myProbable) probs.push(`${d.name.split(" ").slice(-1)[0] || "Team"} prob: ${g.myProbable.name}`);
+      if (g.oppProbable) probs.push(`Opp prob: ${g.oppProbable.name}`);
+      const live = g.status === "Live" ? `<span class="d-live">● LIVE</span>` : "";
+      next = `<div class="d-next">
+        <div class="d-next-h">Next game ${live}</div>
+        <div class="d-next-row"><strong>${vs}</strong> · ${fmtWhen(g.startTime)}</div>
+        ${g.venue ? `<div class="d-next-sub">${g.venue}</div>` : ""}
+        ${probs.length ? `<div class="d-next-sub">${probs.join(" · ")}</div>` : ""}
+      </div>`;
+    } else {
+      next = `<div class="d-next"><div class="d-next-h">Next game</div><div class="d-next-sub">No upcoming game scheduled.</div></div>`;
+    }
+    const starting = d.type === "player" ? startBadge(d.starting) : "";
+    const head = `<div class="d-head">${d.season ? d.season + " season" : ""}${d.position ? " · " + d.position : ""}</div>`;
+    return head + stats + next + starting + (d.note ? `<div class="gc-msg">${d.note}</div>` : "");
+  }
+  async function toggleDetail(btn, p) {
+    const item = btn.closest(".fav-item");
+    const panel = item && item.querySelector(".fav-detail");
+    if (!panel) return;
+    const open = !panel.hidden;
+    if (open) { panel.hidden = true; btn.setAttribute("aria-expanded", "false"); btn.classList.remove("open"); return; }
+    btn.setAttribute("aria-expanded", "true"); btn.classList.add("open");
+    panel.hidden = false;
+    const url = detailUrl(p);
+    if (detailCache.has(url)) { panel.innerHTML = detailHtml(detailCache.get(url)); return; }
+    panel.innerHTML = `<div class="gc-msg">Loading…</div>`;
+    try {
+      const r = await fetch(url);
+      const d = await r.json();
+      detailCache.set(url, d);
+      panel.innerHTML = detailHtml(d);
+    } catch (e) {
+      panel.innerHTML = `<div class="gc-msg error">Couldn't load details (${e.message}).</div>`;
+    }
   }
   function renderSection() {
     const sec = document.getElementById("favorites");
@@ -217,6 +292,8 @@
     if (starBtn) { try { toggle(JSON.parse(decodeURIComponent(starBtn.dataset.fav))); } catch {} return; }
     const rm = e.target.closest && e.target.closest(".fav-remove");
     if (rm) { try { toggle(JSON.parse(decodeURIComponent(rm.dataset.fav))); } catch {} return; }
+    const chipBtn = e.target.closest && e.target.closest(".fav-chip");
+    if (chipBtn) { try { toggleDetail(chipBtn, JSON.parse(decodeURIComponent(chipBtn.dataset.detail))); } catch {} return; }
     if (e.target.id === "favEnable") { enableAlerts(); return; }
     const { bell, panel } = bellEls();
     if (bell && bell.contains(e.target)) {

@@ -37,6 +37,7 @@ function shapeLeaders(data) {
         rank: Number(l.rank) || null,
         value: l.value,
         name: l.person?.fullName || "",
+        personId: l.person?.id ?? null,
         teamId: l.team?.id ?? null,
         teamName: l.team?.name || "",
       })),
