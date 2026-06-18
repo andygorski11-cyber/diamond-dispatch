@@ -25,8 +25,27 @@
         <li><a href="#top25">Top 25</a></li>
         <li><a href="#about">About</a></li>
       </ul>
+      <div class="user-chip" id="userChip" hidden>
+        <img id="userPic" class="user-pic" alt="" referrerpolicy="no-referrer" />
+        <span id="userName" class="user-name"></span>
+        <button id="signOut" class="signout-btn">Sign out</button>
+      </div>
     </nav>
   </header>
+
+  <div id="authGate" class="auth-gate">
+    <div class="auth-card">
+      <div class="auth-brand"><span class="brand-ball">⚾</span> Diamond Dispatch</div>
+      <h1 class="auth-title">Welcome to the ballpark</h1>
+      <p class="auth-sub">
+        Sign in to follow live scores, gamecasts, standings, and stat leaders.
+        New here? Signing in with Google creates your account automatically.
+      </p>
+      <div id="gBtn" class="g-btn-wrap"></div>
+      <p id="authNote" class="auth-note" hidden></p>
+      <p class="auth-fine">We only use your Google name, email, and photo to personalize your dashboard.</p>
+    </div>
+  </div>
 
   <main id="top">
     <section class="hero hero-compact">
@@ -119,6 +138,9 @@
     <p>⚾ Diamond Dispatch · <span id="year"></span> · Live scores via the MLB Stats API</p>
   </footer>
 
+  <script src="auth-config.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="auth.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

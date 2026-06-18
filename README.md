@@ -6,6 +6,8 @@ pulled from the public MLB Stats API and ESPN's college feed through Vercel serv
 functions. Vanilla HTML/CSS/JS frontend, deployed on [Vercel](https://vercel.com).
 
 ## Features
+- **Google sign-in gate** — a login / sign-up screen on first open; the session is saved in the
+  browser so you stay signed in across visits (configure the Client ID in `auth-config.js`)
 - **Live scores** for MLB and college with inning, count, outs, and base runners — auto-refreshing every 30s
 - **Gamecast** — expand any live or finished game for the current at-bat (batter/pitcher),
   an inning-by-inning line score (R/H/E), and a running play-by-play; live gamecasts refresh on their own
@@ -51,4 +53,5 @@ Pushing to the `main` branch on GitHub triggers an automatic production deploy o
 | `index.html` | Markup and content |
 | `styles.css` | Theme, layout, responsive styles |
 | `script.js` | Scores, gamecast, standings, and Top 25 rendering |
+| `auth.js` · `auth-config.js` | Google sign-in gate + session persistence (Client ID config) |
 | `api/*.js` | Serverless proxies for the MLB Stats API and ESPN |

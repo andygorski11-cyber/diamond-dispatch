@@ -296,10 +296,63 @@ a { color: inherit; }
 .dugout-sign { color: var(--muted); font-style: italic; font-size: 0.95rem; }
 .site-footer { background: var(--navy); color: #b9c6dd; text-align: center; padding: 1.4rem 1.25rem; font-size: 0.88rem; }
 
+/* ---------- auth gate ---------- */
+body.gated { overflow: hidden; }
+.auth-gate {
+  position: fixed; inset: 0; z-index: 100;
+  display: grid; place-items: center; padding: 1.25rem;
+  background:
+    radial-gradient(1100px 460px at 80% -10%, rgba(58, 148, 71, 0.35), transparent),
+    linear-gradient(160deg, var(--navy) 0%, var(--navy-2) 55%, #081428 100%);
+}
+.auth-gate[hidden] { display: none; }
+.auth-card {
+  width: min(440px, 100%); background: var(--cream); color: var(--ink);
+  border-radius: 18px; padding: clamp(1.6rem, 4vw, 2.4rem);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); border-top: 5px solid var(--clay);
+  text-align: center; animation: gc-in 0.25s ease;
+}
+.auth-brand {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  font-family: "Anton", sans-serif; font-size: 1.25rem; color: var(--navy); letter-spacing: 0.5px;
+}
+.auth-brand .brand-ball { font-size: 1.5rem; }
+.auth-title { font-size: clamp(1.6rem, 4.5vw, 2.2rem); margin: 0.8rem 0 0.5rem; color: var(--navy); }
+.auth-sub { color: var(--muted); font-size: 1rem; margin: 0 0 1.5rem; line-height: 1.5; }
+.g-btn-wrap { display: flex; justify-content: center; min-height: 44px; }
+.g-placeholder {
+  border: 0; border-radius: 999px; background: #1a73e8; color: #fff; opacity: 0.55;
+  font: inherit; font-weight: 700; padding: 0.7rem 1.6rem; cursor: not-allowed; width: 280px;
+}
+.auth-note { margin: 1rem 0 0; color: var(--ink); font-size: 0.9rem; }
+.auth-note .linkbtn { margin-left: 0.2rem; }
+.auth-fine { margin: 1.4rem 0 0; color: var(--muted); font-size: 0.78rem; line-height: 1.45; }
+
+/* ---------- user chip ---------- */
+.user-chip { display: flex; align-items: center; gap: 0.5rem; }
+.user-pic { width: 1.9rem; height: 1.9rem; border-radius: 50%; object-fit: cover; border: 2px solid var(--clay); }
+.user-name { color: var(--cream); font-weight: 700; font-size: 0.9rem; max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.signout-btn {
+  border: 1px solid rgba(247, 243, 233, 0.4); background: transparent; color: var(--cream);
+  cursor: pointer; font: inherit; font-weight: 600; font-size: 0.78rem;
+  padding: 0.3rem 0.7rem; border-radius: 999px; transition: background 0.15s, color 0.15s;
+}
+.signout-btn:hover { background: var(--clay); border-color: var(--clay); }
+
+/* ---------- toast ---------- */
+.dd-toast {
+  position: fixed; left: 50%; bottom: 1.4rem; transform: translate(-50%, 150%);
+  background: var(--navy); color: var(--cream); padding: 0.7rem 1.2rem; border-radius: 999px;
+  box-shadow: var(--shadow); font-weight: 600; font-size: 0.92rem; z-index: 200;
+  opacity: 0; transition: transform 0.3s ease, opacity 0.3s ease; max-width: 90vw; text-align: center;
+}
+.dd-toast.show { transform: translate(-50%, 0); opacity: 1; }
+
 @media (max-width: 560px) {
   .brand-name { display: none; }
   .nav-links { gap: 1rem; font-size: 0.88rem; }
   .datelabel { min-width: 11rem; }
   #dateText { font-size: 1rem; }
   .scores-bar { justify-content: center; }
+  .user-name { display: none; }
 }
