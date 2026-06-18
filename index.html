@@ -87,6 +87,15 @@
       </div>
     </section>
 
+    <section id="search" class="section search-section">
+      <div class="search-box">
+        <span class="search-icon" aria-hidden="true">🔍</span>
+        <input type="search" id="searchInput" class="search-input" autocomplete="off"
+               placeholder="Search any player or team to follow…" aria-label="Search players and teams" />
+        <div class="search-results" id="searchResults" hidden></div>
+      </div>
+    </section>
+
     <section id="scores" class="section">
       <div class="league-toggle" role="tablist" aria-label="Choose league">
         <button class="lg-btn active" data-league="mlb" role="tab">⚾ MLB</button>
@@ -182,5 +191,6 @@
   <script src="auth.js"></script>
   <script src="favorites.js"></script>
   <script src="script.js"></script>
+  <script src="search.js"></script>
 </body>
 </html>

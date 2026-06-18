@@ -29,8 +29,8 @@
   }
 
   // ---------- star button (called from script.js during render) ----------
-  function star(p) {
-    if (!acctId(user)) return ""; // only for logged-in accounts
+  function star(p, force) {
+    if (!acctId(user) && !force) return ""; // hidden in main views unless logged in
     const on = isFav(p);
     const enc = encodeURIComponent(JSON.stringify(p));
     return `<button class="fav-star ${on ? "on" : ""}" data-fav="${enc}"
@@ -238,7 +238,7 @@
     restartPoller();
   }
 
-  window.Favorites = { star, isFav, onAuth };
+  window.Favorites = { star, isFav, onAuth, loggedIn: () => !!acctId(user) };
 
   // self-init from the current session (auth.js may have booted before this module loaded)
   try { onAuth(JSON.parse(localStorage.getItem("dd_user") || "null")); } catch { onAuth(null); }
