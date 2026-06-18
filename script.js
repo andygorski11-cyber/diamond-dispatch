@@ -81,11 +81,14 @@ let refreshTimer = null;
 // ---------- scores ----------
 async function loadScores(date) {
   const grid = $("#gamesGrid");
-  const lg = LEAGUES[currentLeague];
+  const league = currentLeague;        // pin the league this request belongs to
+  const lg = LEAGUES[league];
   try {
     const res = await fetch(lg.url(date));
+    if (league !== currentLeague) return;   // user switched tabs mid-flight — discard
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    if (league !== currentLeague) return;   // re-check after awaiting the body
     currentDate = data.date;
     $("#dateText").textContent = prettyDate(data.date);
     $("#todayBtn").hidden = false;
@@ -93,6 +96,7 @@ async function loadScores(date) {
     renderGames(data.games.map(lg.norm));
     scheduleRefresh(data.games.map(lg.norm));
   } catch (err) {
+    if (league !== currentLeague) return;
     grid.innerHTML = `<div class="state-msg error">Couldn't load scores (${err.message}). <button class="linkbtn" id="retry">Retry</button></div>`;
     const r = $("#retry"); if (r) r.onclick = () => loadScores(currentDate);
   }
@@ -240,11 +244,16 @@ function gamecastHtml(g) {
 async function renderGamecast(id) {
   const panel = document.getElementById(`gc-${id}`);
   if (!panel) return;
+  const league = currentLeague;        // pin the league this gamecast belongs to
   try {
-    const res = await fetch(`/api/gamecast?league=${currentLeague}&id=${id}`);
+    const res = await fetch(`/api/gamecast?league=${league}&id=${id}`);
+    if (league !== currentLeague || !openGc.has(id)) return;  // tab switched / panel closed
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    panel.innerHTML = gamecastHtml(await res.json());
+    const data = await res.json();
+    if (league !== currentLeague || !openGc.has(id)) return;
+    panel.innerHTML = gamecastHtml(data);
   } catch (err) {
+    if (league !== currentLeague || !openGc.has(id)) return;
     panel.innerHTML = `<div class="gc-msg error">Gamecast unavailable (${err.message}).</div>`;
   }
 }
@@ -391,8 +400,10 @@ async function loadLeaders(league) {
   body.innerHTML = `<div class="state-msg">Loading stats…</div>`;
   try {
     const res = await fetch(`/api/leaders?league=${league}`);
+    if (league !== currentStatLeague) return;   // tab switched mid-flight — discard
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    if (league !== currentStatLeague) return;   // re-check after awaiting the body
 
     if (data.available === false) {
       $("#statsSub").textContent = "Season hitting and team leaders, straight from the live feed.";
@@ -402,6 +413,7 @@ async function loadLeaders(league) {
     $("#statsSub").textContent = `${data.season} season · top hitters and teams from the live MLB feed.`;
     body.innerHTML = leadersHtml(data);
   } catch (err) {
+    if (league !== currentStatLeague) return;
     body.innerHTML = `<div class="state-msg error">Couldn't load stats (${err.message}). <button class="linkbtn" id="statRetry">Retry</button></div>`;
     const r = $("#statRetry");
     if (r) r.onclick = () => loadLeaders(currentStatLeague);
