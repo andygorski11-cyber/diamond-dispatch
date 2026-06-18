@@ -61,6 +61,7 @@
         if (initial) { initial.textContent = (label[0] || "?").toUpperCase(); initial.hidden = false; }
       }
     }
+    notifyAuth(user);
   }
   function showGate() {
     document.body.classList.add("gated");
@@ -81,6 +82,12 @@
     t.classList.add("show");
     clearTimeout(toast._t);
     toast._t = setTimeout(() => t.classList.remove("show"), 4000);
+  }
+  window.ddToast = toast;
+
+  function notifyAuth(u) {
+    if (window.Favorites) window.Favorites.onAuth(u || null);
+    if (window.ddReload) window.ddReload();
   }
 
   function setMode(next) {
@@ -169,6 +176,7 @@
     setMode("login");
     showGate();
     initGoogle();
+    notifyAuth(null);
   }
 
   let inited = false;

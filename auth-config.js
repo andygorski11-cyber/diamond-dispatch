@@ -5,7 +5,8 @@
 //
 // Create one at: https://console.cloud.google.com/apis/credentials
 //   • Authorized JavaScript origins must include:
-//       https://diamond-dispatch-beige.vercel.app
+//       https://diamond-dispatch-baseball.vercel.app   (primary)
+//       https://diamond-dispatch-beige.vercel.app       (old URL, still works)
 //       http://localhost:3000
 window.AUTH_CONFIG = {
   googleClientId: "PASTE_YOUR_CLIENT_ID.apps.googleusercontent.com",

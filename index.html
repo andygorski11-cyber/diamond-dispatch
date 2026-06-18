@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚾</text></svg>" />
+  <link rel="icon" href="/favicon.svg" />
 </head>
 <body>
   <header class="site-header">
@@ -20,11 +20,18 @@
       </a>
       <ul class="nav-links">
         <li><a href="#scores" class="active">Scores</a></li>
+        <li><a href="#favorites" hidden>Favorites</a></li>
         <li><a href="#standings">Standings</a></li>
         <li><a href="#stats">Stats</a></li>
         <li><a href="#top25">Top 25</a></li>
         <li><a href="#about">About</a></li>
       </ul>
+      <div class="bell-wrap" id="bellWrap" hidden>
+        <button class="bell" id="bell" aria-label="Notifications">
+          🔔<span class="bell-badge" id="bellBadge" hidden>0</span>
+        </button>
+        <div class="bell-panel" id="bellPanel" hidden></div>
+      </div>
       <div class="user-chip" id="userChip" hidden>
         <img id="userPic" class="user-pic" alt="" referrerpolicy="no-referrer" hidden />
         <span id="userInitial" class="user-initial" hidden></span>
@@ -112,6 +119,14 @@
       </div>
     </section>
 
+    <section id="favorites" class="section" hidden>
+      <div class="section-head">
+        <h2>My Favorites</h2>
+        <p>Teams and players you follow — you'll get an alert when they go live, score, or finish.</p>
+      </div>
+      <div id="favBody"></div>
+    </section>
+
     <section id="standings" class="section section-alt">
       <div class="section-head">
         <h2>Division Standings</h2>
@@ -165,6 +180,7 @@
   <script src="auth-config.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="auth.js"></script>
+  <script src="favorites.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

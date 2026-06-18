@@ -6,8 +6,10 @@ pulled from the public MLB Stats API and ESPN's college feed through Vercel serv
 functions. Vanilla HTML/CSS/JS frontend, deployed on [Vercel](https://vercel.com).
 
 ## Features
-- **Google sign-in gate** — a login / sign-up screen on first open; the session is saved in the
-  browser so you stay signed in across visits (configure the Client ID in `auth-config.js`)
+- **Login / sign-up gate** — email+password (saved on-device, hashed), Google sign-in, or guest mode;
+  the session persists so you stay signed in across visits (Google Client ID set in `auth-config.js`)
+- **Favorites & alerts** — signed-in users can ★ any team or player; a background watcher raises in-app
+  notifications (bell feed) and optional browser alerts when a favorite goes live, scores, or finishes
 - **Live scores** for MLB and college with inning, count, outs, and base runners — auto-refreshing every 30s
 - **Gamecast** — expand any live or finished game for the current at-bat (batter/pitcher),
   an inning-by-inning line score (R/H/E), and a running play-by-play; live gamecasts refresh on their own
@@ -31,7 +33,7 @@ functions. Vanilla HTML/CSS/JS frontend, deployed on [Vercel](https://vercel.com
 
 _Data: [MLB Stats API](https://statsapi.mlb.com) & ESPN. Not affiliated with MLB or the NCAA._
 
-**🔗 Live:** https://diamond-dispatch-beige.vercel.app
+**🔗 Live:** https://diamond-dispatch-baseball.vercel.app
 **📦 Source:** https://github.com/andygorski11-cyber/diamond-dispatch
 
 ## Run locally
@@ -53,5 +55,6 @@ Pushing to the `main` branch on GitHub triggers an automatic production deploy o
 | `index.html` | Markup and content |
 | `styles.css` | Theme, layout, responsive styles |
 | `script.js` | Scores, gamecast, standings, and Top 25 rendering |
-| `auth.js` · `auth-config.js` | Google sign-in gate + session persistence (Client ID config) |
+| `auth.js` · `auth-config.js` | Login/sign-up gate (email, Google, guest) + session persistence |
+| `favorites.js` | Favorite teams/players + in-app & browser notifications |
 | `api/*.js` | Serverless proxies for the MLB Stats API and ESPN |

@@ -25,6 +25,7 @@ function finalBadge(inning) {
 function mlbTeam(t, opp, state) {
   const final = state === "Final";
   return {
+    league: "mlb", id: t.id,
     logo: mlbLogo(t.id), abbr: t.abbr || t.name, name: t.name,
     record: t.wins != null ? `${t.wins}-${t.losses}` : "",
     score: t.score, rank: null, won: final && t.isWinner,
@@ -47,6 +48,7 @@ function normMlb(g) {
 function collTeam(t, opp, state) {
   const final = state === "Final";
   return {
+    league: "college", id: t.abbr || t.name,
     logo: t.logo, abbr: t.abbr || t.name, name: t.name, record: t.record || "",
     score: t.score, rank: t.rank, won: final && t.winner,
     lost: final && t.score != null && opp.score != null && t.score < opp.score,
@@ -114,6 +116,11 @@ function updateCws(rawGames) {
   }
 }
 
+function teamStar(t) {
+  return window.Favorites
+    ? window.Favorites.star({ lg: t.league, ty: "team", id: String(t.id), nm: t.name, ab: t.abbr, lo: t.logo })
+    : "";
+}
 function teamRow(t) {
   const rec = t.record ? `<span class="rec">${t.record}</span>` : "";
   const rank = t.rank ? `<span class="rank">#${t.rank}</span>` : "";
@@ -123,6 +130,7 @@ function teamRow(t) {
            onerror="this.onerror=null;this.src='${BALL}'" />
       <span class="team-name">${rank}<span class="abbr">${t.abbr}</span> ${rec}</span>
       <span class="team-score">${t.score != null ? t.score : ""}</span>
+      ${teamStar(t)}
     </div>`;
 }
 
@@ -367,6 +375,7 @@ function divisionCard(div) {
       <td class="t-team">
         <img class="mini-logo" src="${mlbLogo(t.id)}" alt="" loading="lazy"
              onerror="this.onerror=null;this.src='${BALL}'" />${t.abbr || t.name}
+        ${window.Favorites ? window.Favorites.star({ lg: "mlb", ty: "team", id: String(t.id), nm: t.name || t.abbr, ab: t.abbr, lo: mlbLogo(t.id) }) : ""}
       </td>
       <td>${t.wins}</td><td>${t.losses}</td><td>${t.pct}</td><td>${t.gb}</td>
       <td class="${t.streak.startsWith("W") ? "streak-w" : "streak-l"}">${t.streak}</td>
@@ -401,6 +410,7 @@ async function loadRankings() {
           <span class="rk-name">${t.name}</span>
           <span class="rk-rec">${t.record}</span>
           ${trend}
+          ${window.Favorites ? window.Favorites.star({ lg: "college", ty: "team", id: t.abbr || t.name, nm: t.name, ab: t.abbr, lo: t.logo }) : ""}
         </div>`;
     }).join("");
   } catch (err) {
@@ -443,6 +453,7 @@ function leaderCard(block) {
            onerror="this.onerror=null;this.src='${BALL}'" />
       <span class="lr-name">${l.name}</span>
       <span class="lr-val">${l.value}</span>
+      ${window.Favorites ? window.Favorites.star({ lg: "mlb", ty: "player", id: l.name, nm: l.name, ab: "", lo: mlbLogo(l.teamId), tid: String(l.teamId) }) : ""}
     </li>`).join("");
   return `
     <div class="leader-card">
@@ -458,6 +469,7 @@ function teamPctTable(teams) {
       <td class="t-team">
         <img class="mini-logo" src="${mlbLogo(t.id)}" alt="" loading="lazy"
              onerror="this.onerror=null;this.src='${BALL}'" />${t.name}
+        ${window.Favorites ? window.Favorites.star({ lg: "mlb", ty: "team", id: String(t.id), nm: t.name, ab: "", lo: mlbLogo(t.id) }) : ""}
       </td>
       <td>${t.wins}</td><td>${t.losses}</td><td class="t-pct">${t.pct}</td>
     </tr>`).join("");
@@ -479,6 +491,15 @@ function leadersHtml(data) {
       ${teamPctTable(data.teams)}
     </div>`;
 }
+
+// Re-render dynamic views (called by auth.js when sign-in state changes, so
+// favorite ★ toggles appear/disappear with the account).
+window.ddReload = function () {
+  loadScores(currentDate);
+  loadStandings();
+  loadRankings();
+  loadLeaders();
+};
 
 // ---------- boot ----------
 $("#year").textContent = new Date().getFullYear();
