@@ -12,6 +12,7 @@ functions. Vanilla HTML/CSS/JS frontend, deployed on [Vercel](https://vercel.com
 - **Date navigation** (prev/next day, jump to latest games)
 - **College World Series** spotlight when CWS games are on the slate
 - **Live MLB division standings** (W-L, PCT, GB, streak) for all six divisions
+- **Stat leaders** — top MLB hitters by batting average, OPS, and slugging, plus the top teams by win%
 - **College Top 25** poll with movement trend
 - Defaults to the most recent day that had games (offseason-safe)
 
@@ -21,6 +22,7 @@ functions. Vanilla HTML/CSS/JS frontend, deployed on [Vercel](https://vercel.com
 | `/api/scores` · `?date=YYYY-MM-DD` | MLB games for the latest day / a specific date |
 | `/api/college` · `?date=YYYY-MM-DD` | College games for the latest day / a specific date |
 | `/api/standings` | Current-season MLB division standings |
+| `/api/leaders?league=mlb` | Top hitters (AVG/OPS/SLG) and teams by win% |
 | `/api/college-rankings` | NCAA D1 Top 25 poll |
 | `/api/gamecast?league=mlb&id={gamePk}` | Per-game line score, at-bat, and play-by-play (MLB) |
 | `/api/gamecast?league=college&id={eventId}` | Per-game line score, at-bat, and play-by-play (college) |

@@ -21,6 +21,7 @@
       <ul class="nav-links">
         <li><a href="#scores" class="active">Scores</a></li>
         <li><a href="#standings">Standings</a></li>
+        <li><a href="#stats">Stats</a></li>
         <li><a href="#top25">Top 25</a></li>
         <li><a href="#about">About</a></li>
       </ul>
@@ -78,7 +79,21 @@
       </div>
     </section>
 
-    <section id="top25" class="section">
+    <section id="stats" class="section">
+      <div class="section-head">
+        <h2>Stat Leaders</h2>
+        <p id="statsSub">Season hitting and team leaders, straight from the live feed.</p>
+      </div>
+      <div class="league-toggle" id="statsToggle" role="tablist" aria-label="Choose league for stats">
+        <button class="slg-btn active" data-league="mlb" role="tab">⚾ MLB</button>
+        <button class="slg-btn" data-league="college" role="tab">🎓 College</button>
+      </div>
+      <div id="statsBody">
+        <div class="state-msg">Loading stats…</div>
+      </div>
+    </section>
+
+    <section id="top25" class="section section-alt">
       <div class="section-head">
         <h2>College Top 25</h2>
         <p id="rankSub">NCAA Division I baseball poll, from the live feed.</p>
@@ -88,7 +103,7 @@
       </div>
     </section>
 
-    <section id="about" class="section section-alt">
+    <section id="about" class="section">
       <div class="section-head"><h2>About</h2></div>
       <div class="dugout">
         <p>

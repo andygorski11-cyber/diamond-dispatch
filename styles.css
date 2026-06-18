@@ -235,6 +235,44 @@ a { color: inherit; }
 .streak-w { color: var(--grass); font-weight: 700; }
 .streak-l { color: var(--clay); font-weight: 700; }
 
+/* ---------- stat leaders ---------- */
+.slg-btn {
+  border: 0; cursor: pointer; font: inherit; font-weight: 700; font-size: 0.95rem;
+  padding: 0.5rem 1.2rem; border-radius: 999px; color: var(--muted);
+  background: transparent; transition: background 0.15s, color 0.15s;
+}
+.slg-btn:hover { color: var(--navy); }
+.slg-btn.active { background: var(--navy); color: var(--cream); box-shadow: var(--shadow); }
+.leaders-grid {
+  display: grid; gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+.leader-card {
+  background: var(--cream); border: 1px solid var(--line); border-radius: 14px;
+  padding: 1rem 1.1rem; box-shadow: var(--shadow);
+}
+.section-alt .leader-card { background: #fff; }
+.leader-card h3 {
+  margin: 0 0 0.7rem; color: var(--clay); font-size: 1.1rem;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.leader-list { list-style: none; margin: 0; padding: 0; }
+.lr-row {
+  display: grid; grid-template-columns: 1.6rem 1.4rem 1fr auto; align-items: center;
+  gap: 0.55rem; padding: 0.4rem 0; border-bottom: 1px solid var(--line);
+}
+.lr-row:last-child { border-bottom: 0; }
+.lr-rank {
+  font-family: "Anton", sans-serif; font-size: 1rem; color: var(--navy); text-align: center;
+}
+.lr-row:first-child .lr-rank { color: var(--clay); }
+.lr-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lr-val { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--navy); }
+.team-leader { grid-column: 1 / -1; }
+.pct-table .t-rank { width: 2rem; text-align: center; font-weight: 800; color: var(--navy); }
+.pct-table .t-pct { font-weight: 800; color: var(--navy); }
+@media (min-width: 760px) { .team-leader { grid-column: auto; } }
+
 /* ---------- college Top 25 ---------- */
 .rankings {
   display: grid; gap: 0.4rem;

@@ -383,9 +383,89 @@ async function loadRankings() {
   }
 }
 
+// ---------- stat leaders ----------
+let currentStatLeague = "mlb";
+
+async function loadLeaders(league) {
+  const body = $("#statsBody");
+  body.innerHTML = `<div class="state-msg">Loading stats…</div>`;
+  try {
+    const res = await fetch(`/api/leaders?league=${league}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (data.available === false) {
+      $("#statsSub").textContent = "Season hitting and team leaders, straight from the live feed.";
+      body.innerHTML = `<div class="state-msg">${data.note || "Stat leaders aren't available for this league yet."}</div>`;
+      return;
+    }
+    $("#statsSub").textContent = `${data.season} season · top hitters and teams from the live MLB feed.`;
+    body.innerHTML = leadersHtml(data);
+  } catch (err) {
+    body.innerHTML = `<div class="state-msg error">Couldn't load stats (${err.message}). <button class="linkbtn" id="statRetry">Retry</button></div>`;
+    const r = $("#statRetry");
+    if (r) r.onclick = () => loadLeaders(currentStatLeague);
+  }
+}
+
+function leaderCard(block) {
+  const rows = (block.leaders || []).map((l) => `
+    <li class="lr-row">
+      <span class="lr-rank">${l.rank ?? ""}</span>
+      <img class="mini-logo" src="${mlbLogo(l.teamId)}" alt="" loading="lazy"
+           onerror="this.onerror=null;this.src='${BALL}'" />
+      <span class="lr-name">${l.name}</span>
+      <span class="lr-val">${l.value}</span>
+    </li>`).join("");
+  return `
+    <div class="leader-card">
+      <h3>${block.label}</h3>
+      <ol class="leader-list">${rows || `<li class="lr-row"><span class="lr-name">No data.</span></li>`}</ol>
+    </div>`;
+}
+
+function teamPctTable(teams) {
+  const rows = (teams || []).map((t) => `
+    <tr class="${t.rank === 1 ? "leader" : ""}">
+      <td class="t-rank">${t.rank}</td>
+      <td class="t-team">
+        <img class="mini-logo" src="${mlbLogo(t.id)}" alt="" loading="lazy"
+             onerror="this.onerror=null;this.src='${BALL}'" />${t.name}
+      </td>
+      <td>${t.wins}</td><td>${t.losses}</td><td class="t-pct">${t.pct}</td>
+    </tr>`).join("");
+  return `
+    <div class="leader-card team-leader">
+      <h3>Team Win %</h3>
+      <table class="stand-table pct-table">
+        <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function leadersHtml(data) {
+  const p = data.players || {};
+  return `
+    <div class="leaders-grid">
+      ${["avg", "ops", "slg"].map((k) => (p[k] ? leaderCard(p[k]) : "")).join("")}
+      ${teamPctTable(data.teams)}
+    </div>`;
+}
+
+document.querySelectorAll(".slg-btn").forEach((btn) => {
+  btn.onclick = () => {
+    if (btn.dataset.league === currentStatLeague) return;
+    currentStatLeague = btn.dataset.league;
+    document.querySelectorAll(".slg-btn").forEach((b) => b.classList.toggle("active", b === btn));
+    loadLeaders(currentStatLeague);
+  };
+});
+
 // ---------- boot ----------
 $("#year").textContent = new Date().getFullYear();
 loadScores(null);
 loadStandings();
 loadRankings();
+loadLeaders(currentStatLeague);
 setInterval(loadStandings, 600000);
