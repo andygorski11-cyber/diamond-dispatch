@@ -164,6 +164,62 @@ a { color: inherit; }
 .base.on { fill: var(--clay); stroke: var(--clay); }
 .venue { color: var(--muted); font-size: 0.8rem; }
 
+/* ---------- gamecast ---------- */
+.gc-btn {
+  align-self: stretch; border: 1px solid var(--line); background: #f4f6fa;
+  color: var(--navy); cursor: pointer; font: inherit; font-weight: 700; font-size: 0.82rem;
+  padding: 0.45rem 0.7rem; border-radius: 9px; margin-top: 0.1rem;
+  display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  transition: background 0.15s, color 0.15s;
+}
+.gc-btn:hover { background: var(--navy); color: var(--cream); }
+.gc-caret { font-size: 0.7rem; transition: transform 0.18s; }
+.gc-btn.open { background: var(--navy); color: var(--cream); }
+.gc-btn.open .gc-caret { transform: rotate(180deg); }
+.gamecast {
+  border-top: 1px dashed var(--line); margin-top: 0.4rem; padding-top: 0.7rem;
+  display: flex; flex-direction: column; gap: 0.8rem; animation: gc-in 0.2s ease;
+}
+@keyframes gc-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.gc-msg { color: var(--muted); font-size: 0.85rem; text-align: center; padding: 0.5rem; }
+.gc-msg.error { color: var(--clay); }
+.gc-now {
+  display: flex; gap: 0.8rem; align-items: center; justify-content: space-between;
+  background: rgba(29, 185, 84, 0.08); border-radius: 10px; padding: 0.6rem 0.75rem;
+}
+.gc-matchup { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.gc-inning { font-weight: 800; color: var(--grass); font-size: 0.9rem; }
+.gc-role { font-size: 0.85rem; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gc-role span {
+  display: inline-block; min-width: 1.5rem; font-size: 0.65rem; font-weight: 800;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+}
+.gc-state { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; flex-shrink: 0; }
+.gc-bases { margin: 0; }
+.gc-count { font-size: 0.78rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.gc-last { font-size: 0.85rem; color: var(--ink); line-height: 1.4; }
+.gc-last span {
+  display: inline-block; font-size: 0.65rem; font-weight: 800; color: var(--clay);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-right: 0.4rem;
+}
+.gc-block h4 {
+  margin: 0 0 0.4rem; font-family: "Inter", sans-serif; font-size: 0.7rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted);
+}
+.gc-line { width: 100%; border-collapse: collapse; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.gc-line th, .gc-line td { padding: 0.25rem 0.3rem; text-align: center; border-bottom: 1px solid var(--line); }
+.gc-line thead th { color: var(--muted); font-weight: 700; font-size: 0.7rem; }
+.gc-line .gc-team { text-align: left; font-weight: 800; color: var(--navy); white-space: nowrap; }
+.gc-line .gc-tot { font-weight: 800; color: var(--navy); background: rgba(11, 31, 58, 0.04); }
+.gc-play {
+  display: flex; gap: 0.55rem; font-size: 0.83rem; line-height: 1.4;
+  padding: 0.3rem 0; border-bottom: 1px solid var(--line);
+}
+.gc-play:last-child { border-bottom: 0; }
+.gc-play.scoring { background: rgba(193, 68, 14, 0.06); border-radius: 6px; padding-left: 0.4rem; padding-right: 0.4rem; }
+.gc-pi { flex-shrink: 0; min-width: 2rem; font-weight: 800; color: var(--clay); font-size: 0.78rem; }
+.gc-pd { color: var(--ink); }
+
 /* ---------- standings ---------- */
 .divisions { display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
 .division { background: var(--cream); border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem; box-shadow: var(--shadow); }

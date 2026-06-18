@@ -33,7 +33,7 @@ function mlbTeam(t, opp, state) {
 }
 function normMlb(g) {
   return {
-    state: g.state, isCWS: false, note: "", venue: g.venue,
+    id: g.gamePk, state: g.state, isCWS: false, note: "", venue: g.venue,
     away: mlbTeam(g.away, g.home, g.state),
     home: mlbTeam(g.home, g.away, g.state),
     live: {
@@ -55,7 +55,7 @@ function collTeam(t, opp, state) {
 function normColl(g) {
   const s = g.situation;
   return {
-    state: g.state, isCWS: g.isCWS, note: g.note,
+    id: g.id, state: g.state, isCWS: g.isCWS, note: g.note,
     venue: g.city ? `${g.venue} · ${g.city}` : g.venue,
     away: collTeam(g.away, g.home, g.state),
     home: collTeam(g.home, g.away, g.state),
@@ -155,13 +155,19 @@ function renderGames(games) {
     grid.innerHTML = `<div class="state-msg">No games scheduled for this date.</div>`;
     return;
   }
-  grid.innerHTML = games.map((g) => `
+  grid.innerHTML = games.map((g) => {
+    const hasGc = g.id != null && (g.state === "Live" || g.state === "Final");
+    return `
     <article class="game ${g.state === "Live" ? "game-live" : ""} ${g.isCWS ? "game-cws" : ""}">
       ${g.isCWS ? `<div class="cws-chip">🏆 ${g.note || "College World Series"}</div>` : ""}
       <div class="teams">${teamRow(g.away)}${teamRow(g.home)}</div>
       ${statusBlock(g)}
       ${g.venue ? `<div class="venue">${g.venue}</div>` : ""}
-    </article>`).join("");
+      ${hasGc ? `<button class="gc-btn" data-gc="${g.id}">${g.state === "Live" ? "📺 Gamecast" : "📋 Box score"}<span class="gc-caret">▾</span></button>
+      <div class="gamecast" id="gc-${g.id}" hidden></div>` : ""}
+    </article>`;
+  }).join("");
+  restoreGamecasts();
 }
 
 function scheduleRefresh(games) {
@@ -171,6 +177,124 @@ function scheduleRefresh(games) {
   if (anyLive) refreshTimer = setTimeout(() => loadScores(currentDate), 30000);
 }
 
+// ---------- gamecast ----------
+const openGc = new Set();      // ids with an expanded gamecast
+const gcTimers = new Map();    // id -> refresh interval
+
+function playInning(p) {
+  if (!p.inning) return "";
+  const arrow = p.half === "top" ? "▲" : p.half === "bottom" ? "▼" : "";
+  return `${arrow}${p.inning}`;
+}
+
+function gcLinescore(g) {
+  if (!g.innings || !g.innings.length) return "";
+  const head = g.innings.map((i) => `<th>${i.num}</th>`).join("");
+  const cell = (v) => `<td>${v != null && v !== "" ? v : ""}</td>`;
+  const row = (sideKey, t) => {
+    const cells = g.innings.map((i) => cell(i[sideKey])).join("");
+    const tot = g.totals[sideKey] || {};
+    return `<tr><td class="gc-team">${t.abbr || t.name || ""}</td>${cells}
+      <td class="gc-tot">${tot.r != null ? tot.r : ""}</td>
+      <td class="gc-tot">${tot.h != null ? tot.h : ""}</td>
+      <td class="gc-tot">${tot.e != null ? tot.e : ""}</td></tr>`;
+  };
+  return `<table class="gc-line">
+    <thead><tr><th></th>${head}<th class="gc-tot">R</th><th class="gc-tot">H</th><th class="gc-tot">E</th></tr></thead>
+    <tbody>${row("away", g.away)}${row("home", g.home)}</tbody>
+  </table>`;
+}
+
+function gamecastHtml(g) {
+  let now = "";
+  if (g.state === "Live") {
+    const outs = g.count.outs != null ? `${g.count.outs} out${g.count.outs === 1 ? "" : "s"}` : "";
+    const cnt = g.count.balls != null && g.count.strikes != null ? `${g.count.balls}-${g.count.strikes}` : "";
+    const meta = [cnt && `${cnt} count`, outs].filter(Boolean).join(" · ");
+    now = `
+      <div class="gc-now">
+        <div class="gc-matchup">
+          <div class="gc-inning">${g.inningLabel || "Live"}</div>
+          ${g.batter ? `<div class="gc-role"><span>AB</span>${g.batter}</div>` : ""}
+          ${g.pitcher ? `<div class="gc-role"><span>P</span>${g.pitcher}</div>` : ""}
+        </div>
+        <div class="gc-state">
+          <div class="bases gc-bases">${basesSvg(g.bases)}</div>
+          ${meta ? `<div class="gc-count">${meta}</div>` : ""}
+        </div>
+      </div>
+      ${g.lastPlay ? `<div class="gc-last"><span>Last play</span>${g.lastPlay}</div>` : ""}`;
+  }
+  const line = g.innings && g.innings.length
+    ? `<div class="gc-block"><h4>Line score</h4>${gcLinescore(g)}</div>` : "";
+  const plays = g.recent && g.recent.length
+    ? `<div class="gc-block"><h4>Recent plays</h4>${g.recent.map((p) =>
+        `<div class="gc-play ${p.scoring ? "scoring" : ""}">
+           <span class="gc-pi">${playInning(p)}</span><span class="gc-pd">${p.desc}</span>
+         </div>`).join("")}</div>`
+    : "";
+  if (!now && !line && !plays) return `<div class="gc-msg">No gamecast detail available yet.</div>`;
+  return `${now}${line}${plays}`;
+}
+
+async function renderGamecast(id) {
+  const panel = document.getElementById(`gc-${id}`);
+  if (!panel) return;
+  try {
+    const res = await fetch(`/api/gamecast?league=${currentLeague}&id=${id}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    panel.innerHTML = gamecastHtml(await res.json());
+  } catch (err) {
+    panel.innerHTML = `<div class="gc-msg error">Gamecast unavailable (${err.message}).</div>`;
+  }
+}
+
+function openGamecast(id) {
+  openGc.add(id);
+  const panel = document.getElementById(`gc-${id}`);
+  const btn = document.querySelector(`.gc-btn[data-gc="${id}"]`);
+  if (btn) btn.classList.add("open");
+  if (panel) { panel.hidden = false; panel.innerHTML = `<div class="gc-msg">Loading gamecast…</div>`; }
+  renderGamecast(id);
+  if (gcTimers.has(id)) clearInterval(gcTimers.get(id));
+  gcTimers.set(id, setInterval(() => renderGamecast(id), 12000));
+}
+
+function closeGamecast(id) {
+  openGc.delete(id);
+  if (gcTimers.has(id)) { clearInterval(gcTimers.get(id)); gcTimers.delete(id); }
+  const panel = document.getElementById(`gc-${id}`);
+  const btn = document.querySelector(`.gc-btn[data-gc="${id}"]`);
+  if (btn) btn.classList.remove("open");
+  if (panel) { panel.hidden = true; panel.innerHTML = ""; }
+}
+
+function toggleGamecast(id) {
+  if (openGc.has(id)) closeGamecast(id);
+  else openGamecast(id);
+}
+
+function closeAllGamecasts() {
+  for (const id of [...openGc]) closeGamecast(id);
+}
+
+// after a re-render of the grid, re-open any gamecasts that were expanded
+function restoreGamecasts() {
+  for (const id of [...openGc]) {
+    const panel = document.getElementById(`gc-${id}`);
+    if (!panel) {  // game dropped off this view
+      if (gcTimers.has(id)) { clearInterval(gcTimers.get(id)); gcTimers.delete(id); }
+      openGc.delete(id);
+      continue;
+    }
+    panel.hidden = false;
+    const btn = document.querySelector(`.gc-btn[data-gc="${id}"]`);
+    if (btn) btn.classList.add("open");
+    renderGamecast(id);
+    if (!gcTimers.has(id)) gcTimers.set(id, setInterval(() => renderGamecast(id), 12000));
+  }
+}
+
 function shiftDay(delta) {
   if (!currentDate) return;
   const d = parseYmd(currentDate);
@@ -178,13 +302,20 @@ function shiftDay(delta) {
   loadScores(ymd(d));
 }
 
-$("#prevDay").onclick = () => shiftDay(-1);
-$("#nextDay").onclick = () => shiftDay(1);
-$("#todayBtn").onclick = () => loadScores(null);
+$("#prevDay").onclick = () => { closeAllGamecasts(); shiftDay(-1); };
+$("#nextDay").onclick = () => { closeAllGamecasts(); shiftDay(1); };
+$("#todayBtn").onclick = () => { closeAllGamecasts(); loadScores(null); };
+
+// expand/collapse a game's gamecast (event delegation survives grid re-renders)
+$("#gamesGrid").addEventListener("click", (e) => {
+  const btn = e.target.closest(".gc-btn");
+  if (btn) toggleGamecast(btn.dataset.gc);
+});
 
 document.querySelectorAll(".lg-btn").forEach((btn) => {
   btn.onclick = () => {
     if (btn.dataset.league === currentLeague) return;
+    closeAllGamecasts();
     currentLeague = btn.dataset.league;
     document.querySelectorAll(".lg-btn").forEach((b) => b.classList.toggle("active", b === btn));
     $("#gamesGrid").innerHTML = `<div class="state-msg">Loading scores…</div>`;
