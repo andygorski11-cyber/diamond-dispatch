@@ -321,14 +321,30 @@ $("#gamesGrid").addEventListener("click", (e) => {
   if (btn) toggleGamecast(btn.dataset.gc);
 });
 
+// Show/hide league-specific sections: MLB-only standings, college-only Top 25.
+function setSectionVisible(id, show) {
+  const sec = document.getElementById(id);
+  if (sec) sec.hidden = !show;
+  const link = document.querySelector(`.nav-links a[href="#${id}"]`);
+  if (link && link.parentElement) link.parentElement.hidden = !show;
+}
+function applyLeagueVisibility() {
+  const mlb = currentLeague === "mlb";
+  setSectionVisible("standings", mlb);   // MLB division standings
+  setSectionVisible("top25", !mlb);      // NCAA Top 25
+}
+
+// One global league toggle drives scores, stats, and which sections show.
 document.querySelectorAll(".lg-btn").forEach((btn) => {
   btn.onclick = () => {
     if (btn.dataset.league === currentLeague) return;
     closeAllGamecasts();
     currentLeague = btn.dataset.league;
     document.querySelectorAll(".lg-btn").forEach((b) => b.classList.toggle("active", b === btn));
+    applyLeagueVisibility();
     $("#gamesGrid").innerHTML = `<div class="state-msg">Loading scores…</div>`;
     loadScores(null);
+    loadLeaders();
   };
 });
 
@@ -392,18 +408,17 @@ async function loadRankings() {
   }
 }
 
-// ---------- stat leaders ----------
-let currentStatLeague = "mlb";
-
-async function loadLeaders(league) {
+// ---------- stat leaders (follows the global league) ----------
+async function loadLeaders() {
+  const league = currentLeague;        // pin the league this request belongs to
   const body = $("#statsBody");
   body.innerHTML = `<div class="state-msg">Loading stats…</div>`;
   try {
     const res = await fetch(`/api/leaders?league=${league}`);
-    if (league !== currentStatLeague) return;   // tab switched mid-flight — discard
+    if (league !== currentLeague) return;   // tab switched mid-flight — discard
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (league !== currentStatLeague) return;   // re-check after awaiting the body
+    if (league !== currentLeague) return;   // re-check after awaiting the body
 
     if (data.available === false) {
       $("#statsSub").textContent = "Season hitting and team leaders, straight from the live feed.";
@@ -413,10 +428,10 @@ async function loadLeaders(league) {
     $("#statsSub").textContent = `${data.season} season · top hitters and teams from the live MLB feed.`;
     body.innerHTML = leadersHtml(data);
   } catch (err) {
-    if (league !== currentStatLeague) return;
+    if (league !== currentLeague) return;
     body.innerHTML = `<div class="state-msg error">Couldn't load stats (${err.message}). <button class="linkbtn" id="statRetry">Retry</button></div>`;
     const r = $("#statRetry");
-    if (r) r.onclick = () => loadLeaders(currentStatLeague);
+    if (r) r.onclick = () => loadLeaders();
   }
 }
 
@@ -465,19 +480,11 @@ function leadersHtml(data) {
     </div>`;
 }
 
-document.querySelectorAll(".slg-btn").forEach((btn) => {
-  btn.onclick = () => {
-    if (btn.dataset.league === currentStatLeague) return;
-    currentStatLeague = btn.dataset.league;
-    document.querySelectorAll(".slg-btn").forEach((b) => b.classList.toggle("active", b === btn));
-    loadLeaders(currentStatLeague);
-  };
-});
-
 // ---------- boot ----------
 $("#year").textContent = new Date().getFullYear();
+applyLeagueVisibility();
 loadScores(null);
 loadStandings();
 loadRankings();
-loadLeaders(currentStatLeague);
+loadLeaders();
 setInterval(loadStandings, 600000);

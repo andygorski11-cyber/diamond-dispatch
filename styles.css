@@ -236,13 +236,6 @@ a { color: inherit; }
 .streak-l { color: var(--clay); font-weight: 700; }
 
 /* ---------- stat leaders ---------- */
-.slg-btn {
-  border: 0; cursor: pointer; font: inherit; font-weight: 700; font-size: 0.95rem;
-  padding: 0.5rem 1.2rem; border-radius: 999px; color: var(--muted);
-  background: transparent; transition: background 0.15s, color 0.15s;
-}
-.slg-btn:hover { color: var(--navy); }
-.slg-btn.active { background: var(--navy); color: var(--cream); box-shadow: var(--shadow); }
 .leaders-grid {
   display: grid; gap: 1.25rem;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
